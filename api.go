@@ -7,9 +7,9 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 )
 
+// Read from .env
 var CLIENT_ID = "CLIENT ID"
 var APP_SECRET = "APP_SECRET"
 
@@ -75,7 +75,6 @@ func generateAccessToken() {
 
 func handleRequest() {
 	// http.HandleFunc("/api/orderse", createOrder)
-	fmt.Println(os.Getenv("CLIENT_ID"))
 	generateAccessToken()
 	log.Fatal(http.ListenAndServe(":8082", nil))
 }
