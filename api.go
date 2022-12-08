@@ -25,23 +25,44 @@ type Token struct {
 	Nonce        string `json:"nonce"`
 }
 
+type CreateOrder struct {
+	Id     string  `json:"id"`
+	Status string  `json:"status"`
+	Links  []Links `json:"links"`
+}
+
+type Links struct {
+	Href   string `json:"href"`
+	Rel    string `json:"rel"`
+	Method string `json:"method"`
+}
+
 func homePage(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "HomePage Endpoint Hit")
 }
 
 // Work in Progress
-func createOrder() {
-	//This will be generated from the generateAccessToken() func
+func createOrder(w http.ResponseWriter, r *http.Request) {
 	accessToken := generateAccessToken()
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	fmt.Println(accessToken)
 
-	//fmt.Println(accessToken) => it prints the access token
-
-	body := []byte(`{intent: "CAPTURE",purchase_units: [{amount: {currency_code: "USD",value: "100.00"}}]}`)
+	body := []byte(`{
+		"intent":"CAPTURE",
+		"purchase_units":[
+		   {
+			  "amount":{
+				 "currency_code":"USD",
+				 "value":"100.00"
+			  }
+		   }
+		]
+	 }`)
 
 	req, err := http.NewRequest("POST", base+"/v2/checkout/orders", bytes.NewBuffer(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+accessToken)
-	fmt.Println(req)
+
 	client := &http.Client{}
 	resp, err := client.Do(req)
 
@@ -50,24 +71,23 @@ func createOrder() {
 	}
 
 	fmt.Println(resp.StatusCode)
-	if resp.StatusCode == http.StatusOK {
+	defer resp.Body.Close()
 
-		defer resp.Body.Close()
-		bodyBytes, err := ioutil.ReadAll(resp.Body)
-
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		bodyString := string(bodyBytes)
-		fmt.Println(bodyString)
-
-		// // TODO return jsonObject.access_token
-		// // Unmarshal the JSON response into a map
-		// var result map[string]interface{}
-		// err = json.Unmarshal(bodyBytes, &result)
-		fmt.Println(bodyString)
+	if err != nil {
+		log.Fatal(err)
 	}
+
+	var jsonMap CreateOrder
+
+	error := json.NewDecoder(resp.Body).Decode(&jsonMap)
+
+	if error != nil {
+		log.Fatal(err)
+	}
+
+	w.WriteHeader(resp.StatusCode)
+	json.NewEncoder(w).Encode(jsonMap)
+
 }
 
 func generateAccessToken() string {
@@ -102,8 +122,8 @@ func generateAccessToken() string {
 }
 
 func handleRequest() {
-	//http.HandleFunc("/api/orders", createOrder)
-	createOrder()
+	http.HandleFunc("/api/orders", createOrder)
+	http.HandleFunc("api/orders/:orderID/capture", capturePayment)
 	log.Fatal(http.ListenAndServe(":8082", nil))
 }
 
