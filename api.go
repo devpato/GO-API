@@ -96,9 +96,9 @@ func generateAccessToken() string {
 	// Unmarshal the JSON response into a map
 	var jsonMap map[string]interface{}
 	json.Unmarshal(bodyBytes, &jsonMap)
-	value := fmt.Sprint(jsonMap["access_token"])
+	access_token := fmt.Sprint(jsonMap["access_token"])
 
-	return value
+	return access_token
 }
 
 func handleRequest() {
